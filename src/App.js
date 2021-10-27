@@ -17,7 +17,7 @@ function App() {
             for (let i in tokenlist) {
                 let tokenA = tokenlist[i][0]
                 let tokenB = tokenlist[i][1]
-                //console.log(tokenA, tokenB)
+                console.log(tokenA, tokenB)
                 findLiquidity(tokenA, tokenB, pairAbi, routerAbi, routerAddress, defaultAccount).then(res => {
                     if (res !== 'bad') {
                         setUserDate(arr => [...arr, res])
