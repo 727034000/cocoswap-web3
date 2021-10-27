@@ -21,7 +21,8 @@ export const getTokenList = () => {
 export const getPairList = () => {
     const tokenList2 = getTokenList()
     const tokenList3 = []
-    const defaultToken = ['0xa71edc38d189767582c38a3145b5873052c3e47a', '0x5545153ccfca01fbd7dd11c0b23ba694d9509a6f']
+    //const defaultToken = ['0xa71edc38d189767582c38a3145b5873052c3e47a', '0x5545153ccfca01fbd7dd11c0b23ba694d9509a6f']
+    const defaultToken = ['0xa71edc38d189767582c38a3145b5873052c3e47a']
     for (let i in tokenList2) {
         for (let j in defaultToken) {
             if (i != defaultToken[j]) {
