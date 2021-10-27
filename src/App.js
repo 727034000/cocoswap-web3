@@ -1,5 +1,5 @@
 import './App.css';
-import {connect} from './api/web3'
+import {getTokenList, getPairList, connect} from './api/web3'
 import {useEffect} from 'react'
 
 function App() {
@@ -10,6 +10,7 @@ function App() {
             const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, gasTransfer, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, erc20Transfer, addETHLiquidity, addErc20Liquidity} = connectWeb3
             const defaultAccount = await getAccount()
             console.log(defaultAccount)
+            getPairList()
         }
         fectdata()
     }, [])

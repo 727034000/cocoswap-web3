@@ -3,6 +3,35 @@ import Web3Modal from 'web3modal'
 import WalletConnectProvider from '@walletconnect/web3-provider'
 import BigNumber from 'bignumber.js'
 import {splitSignature} from '@ethersproject/bytes'
+import * as k from './tokenlist.json'
+
+export const getTokenList = () => {
+    const tokenList = k.default.tokens
+    const tokenList2 = {}
+    tokenList.map((item) => {
+        //console.log(item)
+        if (item.chainId === 128) {
+            tokenList2[item.address] = item
+        }
+    })
+    return tokenList2
+}
+
+//获取所有的交易对可能性组合
+export const getPairList = () => {
+    const tokenList2 = getTokenList()
+    const tokenList3 = []
+    const defaultToken = ['0xa71edc38d189767582c38a3145b5873052c3e47a', '0x5545153ccfca01fbd7dd11c0b23ba694d9509a6f']
+    for (let i in tokenList2) {
+        for (let j in defaultToken) {
+            if (i != defaultToken[j]) {
+                tokenList3.push([i, defaultToken[j]])
+            }
+        }
+    }
+    return tokenList3
+}
+
 
 export const maxamount = (amount, decimals = 18, incoming = true) => {
     const factor = new BigNumber(10 ** Number(decimals))
