@@ -4,11 +4,14 @@ import {useEffect} from 'react'
 
 function App() {
 
-    useEffect(async () => {
-        const connectWeb3 = await connect()
-        const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, gasTransfer, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, erc20Transfer, addETHLiquidity, addErc20Liquidity} = connectWeb3
-        const defaultAccount = await getAccount()
-        console.log(defaultAccount)
+    useEffect(() => {
+        const fectdata = async () => {
+            const connectWeb3 = await connect()
+            const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, gasTransfer, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, erc20Transfer, addETHLiquidity, addErc20Liquidity} = connectWeb3
+            const defaultAccount = await getAccount()
+            console.log(defaultAccount)
+        }
+        fectdata()
     }, [])
     return (
         <div className="App">
