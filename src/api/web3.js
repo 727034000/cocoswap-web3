@@ -251,13 +251,18 @@ export async function connect() {
     const getPairPriceList = async (pairAbi, pairAddress, defaultAccount) => {
         const erc20Abi = `[{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
         const contract = new web3.eth.Contract(JSON.parse(pairAbi), pairAddress)
+        const balance = await contract.methods.balanceOf(defaultAccount).call()
+        console.log('lpbalance1',balance)
+        if (balance == 0) {
+            return 'bad'
+        }
+        console.log('lpbalance2',balance)
         const token0 = await contract.methods.token0().call()
         const token1 = await contract.methods.token1().call()
         const decimals0 = await getErc20Decimals(token0, erc20Abi)
         const decimals1 = await getErc20Decimals(token1, erc20Abi)
         const balance0 = await getErc20balance(token0, erc20Abi, defaultAccount)
         const balance1 = await getErc20balance(token1, erc20Abi, defaultAccount)
-        const balance = await contract.methods.balanceOf(defaultAccount).call()
         const totalSupply = await contract.methods.totalSupply().call()
         const decimals = await contract.methods.decimals().call()
         const {_reserve0, _reserve1} = await contract.methods.getReserves().call()
@@ -286,13 +291,35 @@ export async function connect() {
         const contract = new web3.eth.Contract(JSON.parse(routerAbi), routerAddress)
         const PairAddress = await contract.methods.pairFor(tokenA, tokenB).call()
         const isPairAddress = await isContract(PairAddress)
-        if (!isPairAddress) return null
+        if (!isPairAddress) return 'bad'
         const PairPriceList = await getPairPriceList(pairAbi, PairAddress, defaultAccount)
+        if (PairPriceList === 'bad') {
+            return 'bad'
+        }
         return {
             PairAddress: PairAddress,
             PriceList: PairPriceList
         }
     }
+
+
+    // const MultiFindLiquidity = async (pairAbi, routerAbi, routerAddress, defaultAccount) => {
+    //     const tokenlist = getPairList()
+    //     const PairList = []
+    //     for (let k in tokenlist) {
+    //         let tokenA = tokenlist[k][0]
+    //         let tokenB = tokenlist[k][1]
+    //         const contract = new web3.eth.Contract(JSON.parse(routerAbi), routerAddress)
+    //         const PairAddress = await contract.methods.pairFor(tokenA, tokenB).call()
+    //         const isPairAddress = await isContract(PairAddress)
+    //         if (isPairAddress) {
+    //             const PairPriceList = await getPairPriceList(pairAbi, PairAddress, defaultAccount)
+    //             console.log(PairPriceList)
+    //             PairList.push(PairPriceList)
+    //         }
+    //     }
+    //     return PairList
+    // }
 
     //ETH交易对流动性移除
     const removeEthLiquidity = async (pairAbi, pairAddress, routerAbi, routerAddress, percentage) => {
@@ -407,7 +434,8 @@ export async function connect() {
         getPairPriceList: getPairPriceList,
         findLiquidity: findLiquidity,
         addETHLiquidity: addETHLiquidity,
-        addErc20Liquidity: addErc20Liquidity
+        addErc20Liquidity: addErc20Liquidity,
+        // MultiFindLiquidity:MultiFindLiquidity
     }
 }
 
