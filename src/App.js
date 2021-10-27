@@ -9,7 +9,6 @@ function App() {
         const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, gasTransfer, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, erc20Transfer, addETHLiquidity, addErc20Liquidity} = connectWeb3
         const defaultAccount = await getAccount()
         console.log(defaultAccount)
-
     }, [])
     return (
         <div className="App">
