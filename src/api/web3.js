@@ -1,7 +1,7 @@
 import Web3 from 'web3'
-import Web3Modal, {getChainId} from 'web3modal'
+import Web3Modal from 'web3modal'
 import WalletConnectProvider from '@walletconnect/web3-provider'
-import BigNumber from "bignumber.js";
+import BigNumber from 'bignumber.js'
 import {splitSignature} from '@ethersproject/bytes'
 
 export const maxamount = (amount, decimals = 18, incoming = true) => {
@@ -41,7 +41,7 @@ export const getData = (account, name, chainId, pairAddress, routerAddress, liqu
         nonce: nonce,
         deadline: deadline,
     }
-    const data = JSON.stringify({
+    return JSON.stringify({
         types: {
             EIP712Domain,
             Permit,
@@ -50,7 +50,7 @@ export const getData = (account, name, chainId, pairAddress, routerAddress, liqu
         primaryType: 'Permit',
         message,
     })
-    return data;
+    //return data;
 }
 
 export async function connect() {
@@ -87,20 +87,20 @@ export async function connect() {
 
     //获取当前网络ID
     const getChainId = async () => {
-        const chainId = await web3.eth.getChainId()
-        return chainId
+        return await web3.eth.getChainId()
+        //return chainId
     }
 
     //获取当前区块
     const getBlockNumber = async () => {
-        const BlockNumber = await web3.eth.getBlockNumber()
-        return BlockNumber
+        return await web3.eth.getBlockNumber()
+        //return BlockNumber
     }
 
     //获取当前节点信息
     const getNodeInfo = async () => {
-        const NodeInfo = await web3.eth.getNodeInfo()
-        return NodeInfo
+        return await web3.eth.getNodeInfo()
+        //return NodeInfo
     }
 
     //获取默认钱包账号
@@ -111,16 +111,16 @@ export async function connect() {
 
     //获取账号ETH余额
     const getBalance = async (account) => {
-        const Balance = await web3.eth.getBalance(account)
-        return Balance
+        return await web3.eth.getBalance(account)
+        //return Balance
     }
 
     //获取代币精度
     const erc20Decimals = async (tokenAddress, tokenAbi) => {
         const contract = new web3.eth.Contract(JSON.parse(tokenAbi), tokenAddress)
         try {
-            const tx = await contract.methods.decimals().call()
-            return tx
+            return await contract.methods.decimals().call()
+            //return tx
         } catch (e) {
             return -1
         }
@@ -141,14 +141,14 @@ export async function connect() {
     //获取代币的精度
     const getErc20Decimals = async (tokenAddress, tokenAbi) => {
         const contract = new web3.eth.Contract(JSON.parse(tokenAbi), tokenAddress)
-        const decimals = await contract.methods.decimals().call()
-        return decimals
+        return await contract.methods.decimals().call()
+        //return decimals
     }
 
     const getErc20balance = async (tokenAddress, tokenAbi, defaultAccount) => {
         const contract = new web3.eth.Contract(JSON.parse(tokenAbi), tokenAddress)
-        const balance = await contract.methods.balanceOf(defaultAccount).call()
-        return balance
+        return await contract.methods.balanceOf(defaultAccount).call()
+        //return balance
     }
 
     //转账普通代币
@@ -210,11 +210,12 @@ export async function connect() {
     //判断地址是合约还是普通地址
     const isContract = async (address) => {
         const code = await web3.eth.getCode(address)
-        if (code === '0x') {
-            return false
-        } else {
-            return true
-        }
+        // if (code === '0x') {
+        //     return false
+        // } else {
+        //     return true
+        // }
+        return code !== '0x';
     }
 
     //获取流动性数据
@@ -283,7 +284,7 @@ export async function connect() {
             //获取交易对名称
             const name = await contract.methods.name().call()
             //获取交易对的代币地址
-            const token0 = await contract.methods.token0().call()
+            // const token0 = await contract.methods.token0().call()
             const token1 = await contract.methods.token1().call()
             //获取当前用户的网络随机数
             const nonces = await contract.methods.nonces(defaultAccount).call()
@@ -370,6 +371,7 @@ export async function connect() {
         getBalance: getBalance,
         erc20Approve: erc20Approve,
         erc20Transfer: erc20Transfer,
+        erc20Decimals: erc20Decimals,
         gasTransfer: gasTransfer,
         removeLiquidity: removeLiquidity,
         removeEthLiquidity: removeEthLiquidity,
