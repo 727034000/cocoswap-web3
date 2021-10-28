@@ -24,11 +24,6 @@ function App() {
             // }).catch(e=>{
             //     console.log(e)
             // })
-            erc20Allowance('0xa71edc38d189767582c38a3145b5873052c3e47a',REACT_APP_ERC20TOKEN_ABI,defaultAccount,'0xed7d5f38c79115ca12fe6c0041abb22f0a06c300').then(res=>{
-                console.log(res)
-            }).catch(e=>{
-                console.log(e)
-            })
         }
         fectdata()
     }, [])
