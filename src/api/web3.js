@@ -4,6 +4,11 @@ import WalletConnectProvider from '@walletconnect/web3-provider'
 import BigNumber from 'bignumber.js'
 import {splitSignature} from '@ethersproject/bytes'
 import * as k from './tokenlist.json'
+export const REACT_APP_ERC20TOKEN_ABI = JSON.parse(process.env["REACT_APP_ERC20TOKEN_ABI"])
+export const REACT_APP_PAIR_ABI = JSON.parse(process.env["REACT_APP_PAIR_ABI"])
+export const REACT_APP_ROUTER_ABI = JSON.parse(process.env["REACT_APP_ROUTER_ABI"])
+//console.log(REACT_APP_PAIR_ABI)
+//console.log(REACT_APP_ROUTER_ABI)
 
 export const getTokenList = () => {
     const tokenList = k.default.tokens
