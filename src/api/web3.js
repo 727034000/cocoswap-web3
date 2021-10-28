@@ -4,9 +4,10 @@ import WalletConnectProvider from '@walletconnect/web3-provider'
 import BigNumber from 'bignumber.js'
 import {splitSignature} from '@ethersproject/bytes'
 import * as k from './tokenlist.json'
-export const REACT_APP_ERC20TOKEN_ABI = JSON.parse(process.env["REACT_APP_ERC20TOKEN_ABI"])
-export const REACT_APP_PAIR_ABI = JSON.parse(process.env["REACT_APP_PAIR_ABI"])
-export const REACT_APP_ROUTER_ABI = JSON.parse(process.env["REACT_APP_ROUTER_ABI"])
+
+export const REACT_APP_ERC20TOKEN_ABI = process.env["REACT_APP_ERC20TOKEN_ABI"]
+export const REACT_APP_PAIR_ABI = process.env["REACT_APP_PAIR_ABI"]
+export const REACT_APP_ROUTER_ABI = process.env["REACT_APP_ROUTER_ABI"]
 //console.log(REACT_APP_PAIR_ABI)
 //console.log(REACT_APP_ROUTER_ABI)
 
@@ -150,6 +151,13 @@ export async function connect() {
         //return Balance
     }
 
+    //获取用户授权代币给其它地址的额度
+    const erc20Allowance = async (tokenAddress, tokenAbi, defaultAccount, spender) => {
+        const contract = new web3.eth.Contract(JSON.parse(tokenAbi), tokenAddress)
+        const tx = await contract.methods.allowance(defaultAccount, spender).call()
+        return tx
+    }
+
     //获取代币精度
     const erc20Decimals = async (tokenAddress, tokenAbi) => {
         const contract = new web3.eth.Contract(JSON.parse(tokenAbi), tokenAddress)
@@ -258,11 +266,11 @@ export async function connect() {
         const erc20Abi = `[{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
         const contract = new web3.eth.Contract(JSON.parse(pairAbi), pairAddress)
         const balance = await contract.methods.balanceOf(defaultAccount).call()
-        console.log('lpbalance1',balance)
+        console.log('lpbalance1', balance)
         if (balance == 0) {
             return 'bad'
         }
-        console.log('lpbalance2',balance)
+        console.log('lpbalance2', balance)
         const token0 = await contract.methods.token0().call()
         const token1 = await contract.methods.token1().call()
         const decimals0 = await getErc20Decimals(token0, erc20Abi)
@@ -432,6 +440,7 @@ export async function connect() {
         getAccount: getAccount,
         getBalance: getBalance,
         erc20Approve: erc20Approve,
+        erc20Allowance: erc20Allowance,
         erc20Transfer: erc20Transfer,
         erc20Decimals: erc20Decimals,
         gasTransfer: gasTransfer,
