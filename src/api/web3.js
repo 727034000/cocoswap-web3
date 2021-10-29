@@ -260,9 +260,9 @@ export async function connect() {
         const contract = new web3.eth.Contract(JSON.parse(pairAbi), pairAddress)
         const balance = await contract.methods.balanceOf(defaultAccount).call()
         console.log('lpbalance1', balance)
-        if (balance == 0) {
-            return 'bad'
-        }
+        // if (balance == 0) {
+        //     return 'bad'
+        // }
         console.log('lpbalance2', balance)
         const token0 = await contract.methods.token0().call()
         const token1 = await contract.methods.token1().call()
@@ -278,18 +278,24 @@ export async function connect() {
         let PairPriceList = {}
         //返回各代币相对价格和ppooled数量
         PairPriceList[token0] = {
+            decimals: decimals0,
             pirce: num1 / num0,
             pooled: (balance / 10 ** decimals) / ((num1 / num0) ** 0.5),
-            balance: balance0 / (10 ** decimals0)
+            balance: balance0 / (10 ** decimals0),
+            reserve: _reserve0
         }
         PairPriceList[token1] = {
+            decimals: decimals1,
             pirce: num0 / num1,
             pooled: (balance / 10 ** decimals) / ((num0 / num1) ** 0.5),
-            balance: balance1 / (10 ** decimals1)
+            balance: balance1 / (10 ** decimals1),
+            reserve: _reserve1
         }
         //返回LP余额
         PairPriceList.balance = balance / (10 ** decimals)
         PairPriceList.rate = (balance / totalSupply) * 100
+        PairPriceList.token0 = token0
+        PairPriceList.token1 = token1
         return PairPriceList
     }
 
@@ -297,6 +303,7 @@ export async function connect() {
     const findLiquidity = async (tokenA, tokenB, pairAbi, routerAbi, routerAddress, defaultAccount) => {
         const contract = new web3.eth.Contract(JSON.parse(routerAbi), routerAddress)
         const PairAddress = await contract.methods.pairFor(tokenA, tokenB).call()
+        console.log(PairAddress)
         const isPairAddress = await isContract(PairAddress)
         if (!isPairAddress) return 'bad'
         const PairPriceList = await getPairPriceList(pairAbi, PairAddress, defaultAccount)
@@ -453,6 +460,27 @@ export async function connect() {
         return num
     }
 
+    //普通代币交易对直接兑换
+    const swapTokensForTokens = async (fromTokenAddress, toTokenAddress, fromAmount, slippage, pairAbi, routerAbi, routerAddress) => {
+        try {
+            const defaultAccount = await getAccount()
+            const res = await findLiquidity(fromTokenAddress, toTokenAddress, pairAbi, routerAbi, routerAddress, defaultAccount)
+            const PriceList = res.PriceList
+            const fromAmount2 = maxamount(fromAmount, PriceList[web3.utils.toChecksumAddress(fromTokenAddress)]['decimals'], false)
+            console.log('fromAmount2', fromAmount2.toString())
+            const toAmount = fromAmount2.toString() * (PriceList[web3.utils.toChecksumAddress(toTokenAddress)]['reserve']) / (PriceList[web3.utils.toChecksumAddress(fromTokenAddress)]['reserve'])
+            const toAmount2 = new BigNumber(toAmount - (slippage / 100) * toAmount)
+            console.log('toAmount2', toAmount2.toString())
+            const deadline = await getDeadline()
+            const contract = new web3.eth.Contract(JSON.parse(routerAbi), routerAddress)
+            const tx = await contract.methods.swapExactTokensForTokens(fromAmount2, toAmount2, [fromTokenAddress, toTokenAddress], defaultAccount, deadline).send({from: defaultAccount})
+            return tx.status
+        } catch (e) {
+            console.log(e)
+            return false
+        }
+    }
+
     //dodoapi交易
     const dodoApi = async (fromTokenAddress, toTokenAddress, fromAmount, slippage) => {
         try {
@@ -509,7 +537,8 @@ export async function connect() {
         findLiquidity: findLiquidity,
         addETHLiquidity: addETHLiquidity,
         addErc20Liquidity: addErc20Liquidity,
-        dodoApi: dodoApi
+        dodoApi: dodoApi,
+        swapTokensForTokens: swapTokensForTokens
         // MultiFindLiquidity:MultiFindLiquidity
     }
 }
