@@ -423,6 +423,29 @@ export async function connect() {
         }
     }
 
+    //科学计数法转为string
+    function scientificNotationToString(param) {
+        let strParam = String(param)
+        let flag = /e/.test(strParam)
+        if (!flag) return param
+
+        // 指数符号 true: 正，false: 负
+        let sysbol = true
+        if (/e-/.test(strParam)) {
+            sysbol = false
+        }
+        // 指数
+        let index = Number(strParam.match(/\d+$/)[0])
+        // 基数
+        let basis = strParam.match(/^[\d\.]+/)[0].replace(/\./, '')
+
+        if (sysbol) {
+            return basis.padEnd(index + 1, 0)
+        } else {
+            return basis.padStart(index + basis.length, 0).replace(/^0/, '0.')
+        }
+    }
+
     //避免科学计数法
     function changeNum(num) {
         num = (num - 0).toLocaleString();
@@ -444,14 +467,13 @@ export async function connect() {
                 fromTokenDecimals: fromDecimals,
                 toTokenAddress: toTokenAddress,
                 toTokenDecimals: toDecimals,
-                fromAmount: changeNum(fromAmount * (10 ** fromDecimals)),
+                fromAmount: scientificNotationToString(fromAmount * (10 ** fromDecimals)),
                 slippage: slippage,
                 userAddr: defaultAccount,
                 chainId: chainId,
                 rpc: rpc,
                 deadLine: deadline,
             }
-            console.log(config)
             const res = await axios.get('https://route-api.dodoex.io/dodoapi/getdodoroute?' + qs.stringify(config))
             if (res.data.status === 200) {
                 let res2 = res.data.data
