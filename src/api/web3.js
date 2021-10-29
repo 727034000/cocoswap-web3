@@ -4,11 +4,13 @@ import WalletConnectProvider from '@walletconnect/web3-provider'
 import BigNumber from 'bignumber.js'
 import {splitSignature} from '@ethersproject/bytes'
 import * as k from './tokenlist.json'
+import qs from 'qs'
+import axios from "axios";
 
+export const REACT_APP_RPC_URL = JSON.parse(process.env["REACT_APP_RPC_URL"])
 export const REACT_APP_ERC20TOKEN_ABI = process.env["REACT_APP_ERC20TOKEN_ABI"]
 export const REACT_APP_PAIR_ABI = process.env["REACT_APP_PAIR_ABI"]
 export const REACT_APP_ROUTER_ABI = process.env["REACT_APP_ROUTER_ABI"]
-//console.log(REACT_APP_PAIR_ABI)
 //console.log(REACT_APP_ROUTER_ABI)
 
 export const getTokenList = () => {
@@ -95,22 +97,7 @@ export async function connect() {
             package: WalletConnectProvider,
             bridge: 'https://bridge.walletconnect.org',
             options: {
-                rpc: {
-                    1: 'https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
-                    3: 'https://ropsten.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
-                    4: 'https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
-                    5: 'https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
-                    42: 'https://kovan.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
-                    56: 'https://bsc-dataseed1.defibit.io/',
-                    65: 'https://exchaintestrpc.okex.org',
-                    66: 'https://exchainrpc.okex.org',
-                    70: 'https://http-mainnet.hoosmartchain.com',
-                    97: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
-                    128: 'https://http-mainnet-node.huobichain.com',
-                    170: 'https://http-testnet.hoosmartchain.com',
-                    256: 'https://http-testnet.hecochain.com',
-                    20212: 'https://zsc.one/rpc'
-                }
+                rpc: REACT_APP_RPC_URL
             }
         }
     }
@@ -131,6 +118,12 @@ export async function connect() {
     const getBlockNumber = async () => {
         return await web3.eth.getBlockNumber()
         //return BlockNumber
+    }
+
+    const getDeadline = async () => {
+        const blockNumber = await getBlockNumber()
+        const {timestamp} = await web3.eth.getBlock(blockNumber)
+        return timestamp + 600
     }
 
     //获取当前节点信息
@@ -430,6 +423,41 @@ export async function connect() {
         }
     }
 
+    const dodoApi = async (fromTokenAddress, toTokenAddress, fromAmount, slippage) => {
+        try {
+            const fromDecimals = await erc20Decimals(fromTokenAddress, REACT_APP_ERC20TOKEN_ABI)
+            const toDecimals = await erc20Decimals(toTokenAddress, REACT_APP_ERC20TOKEN_ABI)
+            const defaultAccount = await getAccount()
+            const deadline = await getDeadline()
+            const chainId = await getChainId()
+            const rpc = REACT_APP_RPC_URL[chainId]
+            const config = {
+                fromTokenAddress: fromTokenAddress,
+                fromTokenDecimals: fromDecimals,
+                toTokenAddress: toTokenAddress,
+                toTokenDecimals: toDecimals,
+                fromAmount: fromAmount * (10 ** fromDecimals),
+                slippage: slippage,
+                userAddr: defaultAccount,
+                chainId: chainId,
+                rpc: rpc,
+                deadLine: deadline,
+            }
+            console.log(config)
+            const res = await axios.get('https://route-api.dodoex.io/dodoapi/getdodoroute?' + qs.stringify(config))
+            if (res.data.status === 200) {
+                let res2 = res.data.data
+                res2.approvefromAmount = new BigNumber(fromAmount)
+                res2.defaultAccount = defaultAccount
+                return res2
+            } else {
+                return {}
+            }
+        } catch (e) {
+            return {}
+        }
+    }
+
     return {
         // wallet_address: accounts[0].slice(0, 4) + '...' + accounts[0].slice(-4),
         web3Modal: web3Modal,
@@ -439,6 +467,7 @@ export async function connect() {
         getNodeInfo: getNodeInfo,
         getAccount: getAccount,
         getBalance: getBalance,
+        getDeadline: getDeadline,
         erc20Approve: erc20Approve,
         erc20Allowance: erc20Allowance,
         erc20Transfer: erc20Transfer,
@@ -450,6 +479,7 @@ export async function connect() {
         findLiquidity: findLiquidity,
         addETHLiquidity: addETHLiquidity,
         addErc20Liquidity: addErc20Liquidity,
+        dodoApi: dodoApi
         // MultiFindLiquidity:MultiFindLiquidity
     }
 }
