@@ -423,6 +423,14 @@ export async function connect() {
         }
     }
 
+    //避免科学计数法
+    function changeNum(num) {
+        num = (num - 0).toLocaleString();
+        num = num.toString().replace(/\$|\,/g, '');
+        return num
+    }
+
+    //dodoapi交易
     const dodoApi = async (fromTokenAddress, toTokenAddress, fromAmount, slippage) => {
         try {
             const fromDecimals = await erc20Decimals(fromTokenAddress, REACT_APP_ERC20TOKEN_ABI)
@@ -436,7 +444,7 @@ export async function connect() {
                 fromTokenDecimals: fromDecimals,
                 toTokenAddress: toTokenAddress,
                 toTokenDecimals: toDecimals,
-                fromAmount: fromAmount * (10 ** fromDecimals),
+                fromAmount: changeNum(fromAmount * (10 ** fromDecimals)),
                 slippage: slippage,
                 userAddr: defaultAccount,
                 chainId: chainId,
