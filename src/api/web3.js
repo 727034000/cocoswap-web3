@@ -542,12 +542,12 @@ export async function connect() {
     const dodoApi = async (fromTokenAddress, toTokenAddress, fromAmount, slippage) => {
         const EHT = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
         if (fromTokenAddress === '')
-            fromTokenAddress  = EHT
+            fromTokenAddress = EHT
         if (toTokenAddress === '')
-            toTokenAddress  = EHT
+            toTokenAddress = EHT
 
         try {
-            let fromDecimals,toDecimals
+            let fromDecimals, toDecimals
             if (fromTokenAddress === EHT) {
                 fromDecimals = 18
             } else {
