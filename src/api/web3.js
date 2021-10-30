@@ -257,7 +257,7 @@ export async function connect() {
 
     //获取流动性数据
     const getPairPriceList = async (pairAbi, pairAddress, defaultAccount) => {
-        const erc20Abi = `[{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
+        // const erc20Abi = `[{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
         const contract = new web3.eth.Contract(JSON.parse(pairAbi), pairAddress)
         const balance = await contract.methods.balanceOf(defaultAccount).call()
         console.log('lpbalance1', balance)
@@ -267,10 +267,10 @@ export async function connect() {
         console.log('lpbalance2', balance)
         const token0 = await contract.methods.token0().call()
         const token1 = await contract.methods.token1().call()
-        const decimals0 = await getErc20Decimals(token0, erc20Abi)
-        const decimals1 = await getErc20Decimals(token1, erc20Abi)
-        const balance0 = await getErc20balance(token0, erc20Abi, defaultAccount)
-        const balance1 = await getErc20balance(token1, erc20Abi, defaultAccount)
+        const decimals0 = await getErc20Decimals(token0, REACT_APP_ERC20TOKEN_ABI)
+        const decimals1 = await getErc20Decimals(token1, REACT_APP_ERC20TOKEN_ABI)
+        const balance0 = await getErc20balance(token0, REACT_APP_ERC20TOKEN_ABI, defaultAccount)
+        const balance1 = await getErc20balance(token1, REACT_APP_ERC20TOKEN_ABI, defaultAccount)
         const totalSupply = await contract.methods.totalSupply().call()
         const decimals = await contract.methods.decimals().call()
         const {_reserve0, _reserve1} = await contract.methods.getReserves().call()
@@ -384,14 +384,14 @@ export async function connect() {
     //添加ETH交易对流动性
     const addETHLiquidity = async (token, amountToken, ethValue, routerAbi, routerAddress) => {
         try {
-            const erc20Abi = `[{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
+            // const erc20Abi = `[{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
             const defaultAccount = await getAccount()
             //获取当前区块号码
             const blockNumber = await getBlockNumber()
             //获取当前区块的时间戳
             const {timestamp} = await web3.eth.getBlock(blockNumber)
             const deadline = timestamp + 600
-            const decimals = await getErc20Decimals(token, erc20Abi)
+            const decimals = await getErc20Decimals(token, REACT_APP_ERC20TOKEN_ABI)
             const amountToken2 = maxamount(amountToken, decimals, false)
             //连接路由合约
             const contract = new web3.eth.Contract(JSON.parse(routerAbi), routerAddress)
@@ -408,15 +408,15 @@ export async function connect() {
     //普通代币流动性添加
     const addErc20Liquidity = async (tokenA, tokenB, amountA, amountB, routerAbi, routerAddress) => {
         try {
-            const erc20Abi = `[{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
+            // const erc20Abi = `[{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
             const defaultAccount = await getAccount()
             //获取当前区块号码
             const blockNumber = await getBlockNumber()
             //获取当前区块的时间戳
             const {timestamp} = await web3.eth.getBlock(blockNumber)
             const deadline = timestamp + 600
-            const decimalsA = await getErc20Decimals(tokenA, erc20Abi)
-            const decimalsB = await getErc20Decimals(tokenB, erc20Abi)
+            const decimalsA = await getErc20Decimals(tokenA, REACT_APP_ERC20TOKEN_ABI)
+            const decimalsB = await getErc20Decimals(tokenB, REACT_APP_ERC20TOKEN_ABI)
             const amountTokenA2 = maxamount(amountA, decimalsA, false)
             const amountTokenB2 = maxamount(amountB, decimalsB, false)
             //连接路由合约
@@ -462,14 +462,14 @@ export async function connect() {
     }
 
     const getPairInfo = async (tokenA, tokenB, routerAbi, routerAddress, pairAbi) => {
-        const erc20Abi = `[{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
+        //const erc20Abi = `[{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"}]`
         const contract0 = new web3.eth.Contract(JSON.parse(routerAbi), routerAddress)
         const PairAddress = await contract0.methods.pairFor(tokenA, tokenB).call()
         const contract = new web3.eth.Contract(JSON.parse(pairAbi), PairAddress)
         const token0 = await contract.methods.token0().call()
         const token1 = await contract.methods.token1().call()
-        const decimals0 = await getErc20Decimals(token0, erc20Abi)
-        const decimals1 = await getErc20Decimals(token1, erc20Abi)
+        const decimals0 = await getErc20Decimals(token0, REACT_APP_ERC20TOKEN_ABI)
+        const decimals1 = await getErc20Decimals(token1, REACT_APP_ERC20TOKEN_ABI)
         const {_reserve0, _reserve1} = await contract.methods.getReserves().call()
         let PairPriceList = {}
         //返回各代币相对价格和ppooled数量
