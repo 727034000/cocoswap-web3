@@ -58,19 +58,30 @@ function App() {
             // console.log('HT-USDT兑换', await swapETHForToken(USDT, 0.01, 5, RouterAddress))
             // console.log('USDT-HT兑换', await swapTokenForETH(USDT, 0.01, 5, RouterAddress))
             console.log('调用dodoswap接口测试')
-            const dodoObj = {fromAddress: defaultETH, toAddress: USDT, fromAmount: 0.00001, slippage: 5}
-            //const dodoObj = {fromAddress: USDT, toAddress: defaultETH, fromAmount: 0.01, slippage: 5}
+            //HT兑换USDT,fromAddress设为空
+            //const dodoObj = {fromAddress: '', toAddress: USDT, fromAmount: 0.00001, slippage: 5}
+            //USDT兑换HT,toAddress设为空
+            const dodoObj = {fromAddress: USDT, toAddress: '', fromAmount: 0.00001, slippage: 5}
             const txDodoApi = await dodoApi(dodoObj.fromAddress, dodoObj.toAddress, dodoObj.fromAmount, dodoObj.slippage)
             console.log(txDodoApi)
             if (txDodoApi.data) {
+                let isApproved
                 let {targetApproveAddr, data, to} = txDodoApi
-                const tx1 = await erc20Approve(dodoObj.fromAddress, targetApproveAddr, dodoObj.fromAmount)
-                if (tx1) {
-                    await web3.eth.sendTransaction({
+                if (targetApproveAddr === '') {
+                    isApproved = true
+                } else {
+                    isApproved = await erc20Approve(dodoObj.fromAddress, targetApproveAddr, dodoObj.fromAmount)
+                }
+                if (isApproved) {
+                    let txConfig = {
                         data: data,
                         from: defaultAccount,
-                        to: to
-                    })
+                        to: to,
+                    }
+                    if (targetApproveAddr === '') {
+                        txConfig.value = maxamount(dodoObj.fromAmount, 18, false)
+                    }
+                    await web3.eth.sendTransaction(txConfig)
                 }
             }
             console.log('调用dodoswap接口测试结束')

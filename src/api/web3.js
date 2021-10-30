@@ -540,9 +540,29 @@ export async function connect() {
 
     //dodoapi交易
     const dodoApi = async (fromTokenAddress, toTokenAddress, fromAmount, slippage) => {
+        const EHT = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
+        if (fromTokenAddress === '')
+            fromTokenAddress  = EHT
+        if (toTokenAddress === '')
+            toTokenAddress  = EHT
+
         try {
-            const fromDecimals = await getErc20Decimals(fromTokenAddress)
-            const toDecimals = await getErc20Decimals(toTokenAddress)
+            let fromDecimals,toDecimals
+            if (fromTokenAddress === EHT) {
+                fromDecimals = 18
+            } else {
+                fromDecimals = await getErc20Decimals(fromTokenAddress)
+            }
+
+            if (toTokenAddress === EHT) {
+                toDecimals = 18
+            } else {
+                toDecimals = await getErc20Decimals(toTokenAddress)
+            }
+
+            //const fromDecimals = await getErc20Decimals(fromTokenAddress)
+            //const fromDecimals = 18
+            //const toDecimals = await getErc20Decimals(toTokenAddress)
             const defaultAccount = await getAccount()
             const deadline = await getDeadline()
             const chainId = await getChainId()
