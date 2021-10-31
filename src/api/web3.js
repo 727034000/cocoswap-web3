@@ -6,12 +6,33 @@ import {splitSignature} from '@ethersproject/bytes'
 import * as k from './tokenlist.json'
 import qs from 'qs'
 import axios from "axios";
+import lodash from 'lodash'
 
+export const swapRate = 0.99
 export const REACT_APP_RPC_URL = JSON.parse(process.env["REACT_APP_RPC_URL"])
 export const REACT_APP_ERC20TOKEN_ABI = JSON.parse(process.env["REACT_APP_ERC20TOKEN_ABI"])
 export const REACT_APP_PAIR_ABI = JSON.parse(process.env["REACT_APP_PAIR_ABI"])
 export const REACT_APP_ROUTER_ABI = JSON.parse(process.env["REACT_APP_ROUTER_ABI"])
 export const REACT_APP_ETH_ADDRESS = JSON.parse(process.env["REACT_APP_ETH_ADDRESS"])
+
+
+Object.defineProperty(Array.prototype, 'max', {
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: function () {
+        return Math.max.apply(null, this);
+    }
+})
+
+Object.defineProperty(Array.prototype, 'min', {
+    writable: false,
+    enumerable: false,
+    configurable: true,
+    value: function () {
+        return Math.min.apply(null, this);
+    }
+})
 
 
 export const getTokenList = () => {
@@ -593,17 +614,73 @@ export async function connect() {
         }
     }
 
+    const getArrayUnique = (arr) => {
+        console.log(arr)
+        const arrNew = lodash.uniq(arr)
+        console.log(arr, arrNew, arr.length, arrNew.length)
+        return arr.length === arrNew.length
+    }
+    //获取兑换路径列表
+    const getSwapPath = (swapList, MiddlePathList) => {
+        let OneMiddlePath = []
+        let TwoMiddlePath = []
+        let ThreeMiddlePath = []
+        let FourMiddlePath = []
+        for (let i in MiddlePathList) {
+            OneMiddlePath.push([swapList[0], MiddlePathList[i], swapList[1]])
+        }
+        for (let i in MiddlePathList) {
+            for (let j in MiddlePathList) {
+                if (getArrayUnique([MiddlePathList[i], MiddlePathList[j]])) {
+                    TwoMiddlePath.push([swapList[0], MiddlePathList[i], MiddlePathList[j], swapList[1]])
+                }
+            }
+        }
+
+        for (let i in MiddlePathList) {
+            for (let j in MiddlePathList) {
+                for (let k in MiddlePathList) {
+                    if (getArrayUnique([MiddlePathList[i], MiddlePathList[j], MiddlePathList[k]])) {
+                        ThreeMiddlePath.push([swapList[0], MiddlePathList[i], MiddlePathList[j], MiddlePathList[k], swapList[1]])
+                    }
+                }
+            }
+        }
+
+        for (let i in MiddlePathList) {
+            for (let j in MiddlePathList) {
+                for (let k in MiddlePathList) {
+                    for (let l in MiddlePathList) {
+                        if (getArrayUnique([MiddlePathList[i], MiddlePathList[j], MiddlePathList[k], MiddlePathList[l]])) {
+                            FourMiddlePath.push([swapList[0], MiddlePathList[i], MiddlePathList[j], MiddlePathList[k], MiddlePathList[l], swapList[1]])
+                        }
+                    }
+                }
+            }
+        }
+
+        let list_new = {
+            NoMiddlePath: [swapList],
+            OneMiddlePath: OneMiddlePath,
+            TwoMiddlePath: TwoMiddlePath,
+            ThreeMiddlePath: ThreeMiddlePath,
+            FourMiddlePath: FourMiddlePath
+        }
+        console.log(list_new)
+        return list_new
+    }
+
     /**
      * 无中间兑换路径
      const list = [fromToken,toToken]
      **/
-    const getNoMiddlePath = async (list, RouterAddress) => {
+    const getNoMiddlePathPrice = async (list, RouterAddress) => {
         try {
             const m1 = await getPairInfo(list[0], list[1], RouterAddress)
             let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
-            return n1
+            return {price: n1, path: list}
         } catch (e) {
-            return 0;
+            return {price: 0, path: null};
         }
     }
 
@@ -618,9 +695,9 @@ export async function connect() {
             //const m = await getPairInfo(list.fromToken, list.toToken, RouterAddress)
             let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
             let n2 = (m2[list[1]]['reserve']) / (m2[list[2]]['reserve'])
-            return n1 * n2
+            return {price: n1 * n2, path: list}
         } catch (e) {
-            return 0;
+            return {price: 0, path: null}
         }
     }
 
@@ -635,11 +712,113 @@ export async function connect() {
             const m3 = await getPairInfo(list[2], list[3], RouterAddress)
             let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
             let n2 = (m2[list[1]]['reserve']) / (m2[list[2]]['reserve'])
-            let n3 = (m2[list[2]]['reserve']) / (m2[list[3]]['reserve'])
-            return n1 * n2 * n3
+            let n3 = (m3[list[2]]['reserve']) / (m3[list[3]]['reserve'])
+            return {price: n1 * n2 * n3, path: list}
         } catch (e) {
-            return 0;
+            return {price: 0, path: null};
         }
+    }
+
+    /**
+     * 三个中间兑换路径
+     const list = [fromToken,middleToken1,middleToken2,middleToken3,toToken]
+     **/
+    const getThreeMiddlePathPrice = async (list, RouterAddress) => {
+        try {
+            const m1 = await getPairInfo(list[0], list[1], RouterAddress)
+            const m2 = await getPairInfo(list[1], list[2], RouterAddress)
+            const m3 = await getPairInfo(list[2], list[3], RouterAddress)
+            const m4 = await getPairInfo(list[3], list[4], RouterAddress)
+            let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
+            let n2 = (m2[list[1]]['reserve']) / (m2[list[2]]['reserve'])
+            let n3 = (m3[list[2]]['reserve']) / (m3[list[3]]['reserve'])
+            let n4 = (m4[list[3]]['reserve']) / (m4[list[4]]['reserve'])
+            return {price: n1 * n2 * n3 * n4, path: list}
+        } catch (e) {
+            return {price: 0, path: null};
+        }
+    }
+
+    /**
+     * 四个中间兑换路径
+     const list = [fromToken,middleToken1,middleToken2,middleToken3,middleToken4,toToken]
+     **/
+    const getFourMiddlePathPrice = async (list, RouterAddress) => {
+        try {
+            const m1 = await getPairInfo(list[0], list[1], RouterAddress)
+            const m2 = await getPairInfo(list[1], list[2], RouterAddress)
+            const m3 = await getPairInfo(list[2], list[3], RouterAddress)
+            const m4 = await getPairInfo(list[3], list[4], RouterAddress)
+            const m5 = await getPairInfo(list[4], list[5], RouterAddress)
+            let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
+            let n2 = (m2[list[1]]['reserve']) / (m2[list[2]]['reserve'])
+            let n3 = (m3[list[2]]['reserve']) / (m3[list[3]]['reserve'])
+            let n4 = (m4[list[3]]['reserve']) / (m4[list[4]]['reserve'])
+            let n5 = (m5[list[4]]['reserve']) / (m5[list[5]]['reserve'])
+            return {price: n1 * n2 * n3 * n4 * n5 * (swapRate ** 4), path: list}
+        } catch (e) {
+            return {price: 0, path: null};
+        }
+    }
+
+    const GetSwapPrice = async (swapList, MiddlePathList, RouterAddress, callback) => {
+        const listNew = getSwapPath(swapList, MiddlePathList)
+        const listNewCount = listNew.NoMiddlePath.length + listNew.OneMiddlePath.length + listNew.TwoMiddlePath.length + listNew.ThreeMiddlePath.length + listNew.FourMiddlePath.length
+        console.log('listNewCount', listNewCount)
+        let PriceList = []
+        if (listNew.NoMiddlePath.length > 0) {
+            for (let i in listNew.NoMiddlePath) {
+                getNoMiddlePathPrice(listNew.NoMiddlePath[i], RouterAddress).then(res => {
+                    PriceList.push(res)
+                    callback(PriceList, listNewCount)
+                })
+
+            }
+        }
+        if (listNew.OneMiddlePath.length > 0) {
+            for (let i in listNew.OneMiddlePath) {
+                getOneMiddlePathPrice(listNew.OneMiddlePath[i], RouterAddress).then(res => {
+                    PriceList.push(res)
+                    callback(PriceList, listNewCount)
+                })
+            }
+        }
+        if (listNew.TwoMiddlePath.length > 0) {
+            for (let i in listNew.TwoMiddlePath) {
+                getTwoMiddlePathPrice(listNew.TwoMiddlePath[i], RouterAddress).then(res => {
+                    PriceList.push(res)
+                    callback(PriceList, listNewCount)
+                })
+            }
+        }
+
+        if (listNew.ThreeMiddlePath.length > 0) {
+            for (let i in listNew.ThreeMiddlePath) {
+                getThreeMiddlePathPrice(listNew.ThreeMiddlePath[i], RouterAddress).then(res => {
+                    PriceList.push(res)
+                    callback(PriceList, listNewCount)
+                })
+            }
+        }
+
+        if (listNew.FourMiddlePath.length > 0) {
+            for (let i in listNew.FourMiddlePath) {
+                getFourMiddlePathPrice(listNew.FourMiddlePath[i], RouterAddress).then(res => {
+                    PriceList.push(res)
+                    callback(PriceList, listNewCount)
+                })
+            }
+        }
+    }
+
+    //获取最佳兑换路径
+    const getBestPrcie = async (swapList, MiddlePathList, RouterAddress, callback) => {
+        GetSwapPrice(swapList, MiddlePathList, RouterAddress, function (list, listNewCount) {
+            const list2 = lodash.sortBy(list, function (it) {
+                return it.price
+            })
+            callback(list2[list2.length - 1])
+        })
     }
 
     return {
@@ -669,9 +848,14 @@ export async function connect() {
         swapTokensForTokens: swapTokensForTokens,
         swapTokenForETH: swapTokenForETH,
         swapETHForToken: swapETHForToken,
-        getNoMiddlePath: getNoMiddlePath,
+        getSwapPath: getSwapPath,
+        GetSwapPrice: GetSwapPrice,
+        getBestPrcie: getBestPrcie,
+        getNoMiddlePathPrice: getNoMiddlePathPrice,
         getOneMiddlePathPrice: getOneMiddlePathPrice,
-        getTwoMiddlePathPrice: getTwoMiddlePathPrice
+        getTwoMiddlePathPrice: getTwoMiddlePathPrice,
+        getThreeMiddlePathPrice: getThreeMiddlePathPrice,
+        getFourMiddlePathPrice: getFourMiddlePathPrice
     }
 }
 

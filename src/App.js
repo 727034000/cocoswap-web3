@@ -12,13 +12,14 @@ import {useEffect, useState} from 'react'
 import axios from "axios"
 import qs from 'qs'
 
-
 function App() {
     const [userData, setUserDate] = useState([]);
+    const [maxprice, setMaxprice] = useState(0);
+    const [path, setPath] = useState([]);
     useEffect(() => {
         const fectdata = async () => {
             const connectWeb3 = await connect()
-            const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, getErc20Allowance, getErc20Decimals, getErc20balance, gasTransfer, erc20Transfer, getPairInfo, addETHLiquidity, addErc20Liquidity, getDeadline, dodoApi, swapTokensForTokens, swapTokenForETH, swapETHForToken, getNoMiddlePath, getOneMiddlePathPrice, getTwoMiddlePathPrice} = connectWeb3
+            const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, getErc20Allowance, getErc20Decimals, getErc20balance, gasTransfer, erc20Transfer, getPairInfo, addETHLiquidity, addErc20Liquidity, getDeadline, dodoApi, swapTokensForTokens, swapTokenForETH, swapETHForToken, getSwapPath, GetSwapPrice, getBestPrcie, getNoMiddlePath, getOneMiddlePathPrice, getTwoMiddlePathPrice, getThreeMiddlePathPrice} = connectWeb3
             const defaultAccount = await getAccount()
             const defaultChainId = await getChainId()
             const BlockNumber = await getBlockNumber()
@@ -87,20 +88,27 @@ function App() {
             // console.log('调用dodoswap接口测试结束')
             const MDX = web3.utils.toChecksumAddress('0x25D2e80cB6B86881Fd7e07dd263Fb79f4AbE033c')
             //寻找最佳兑换路径
-            let list = [MDX, USDT]
-            getNoMiddlePath(list, RouterAddress).then(res => {
-                console.log('getNoMiddlePath',res)
-            }).catch(e => {
-                console.log(e)
+            const HTMoon = web3.utils.toChecksumAddress('0xb62E3b6a3866f5754FdeFcf82e733310e2851043')
+            const HUSD = web3.utils.toChecksumAddress('0x0298c2b32eaE4da002a15f36fdf7615BEa3DA047')
+            const BXH = web3.utils.toChecksumAddress('0xcBD6Cb9243d8e3381Fea611EF023e17D1B7AeDF0')
+            let nameList = {}
+            nameList[HTMoon] = 'HTMoon'
+            nameList[MDX] = 'MDX'
+            nameList[USDT] = 'USDT'
+            nameList[HUSD] = 'HUSD'
+            nameList[defaultETH] = 'ETH'
+            const txPath = [HTMoon, MDX]
+            const middlePath = [USDT, HUSD, defaultETH]
+            const listNew = getSwapPath(txPath, middlePath)
+            console.log(listNew)
+            getBestPrcie(txPath, middlePath, RouterAddress, function (item) {
+                //console.log(item.path.join('-'))
+                let nameStr = []
+                for (let i in item.path) {
+                    nameStr.push(nameList[item.path[i]])
+                }
+                console.log(item.price, item.path, nameStr.join(' > '))
             })
-
-            list = [MDX, defaultETH, USDT]
-            getOneMiddlePathPrice(list, RouterAddress).then(res => {
-                console.log('getOneMiddlePathPrice',res)
-            }).catch(e => {
-                console.log(e)
-            })
-
 
         }
         fectdata()
@@ -108,7 +116,8 @@ function App() {
     return (
         <div className="App">
             <header className="App-header">
-                web
+                {path}
+                web {maxprice}
             </header>
         </div>
     );
