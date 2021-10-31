@@ -19,7 +19,7 @@ function App() {
     useEffect(() => {
         const fectdata = async () => {
             const connectWeb3 = await connect()
-            const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, getErc20Allowance, getErc20Decimals, getErc20balance, gasTransfer, erc20Transfer, getPairInfo, addETHLiquidity, addErc20Liquidity, getDeadline, dodoApi, swapTokensForTokens, swapTokenForETH, swapETHForToken, getSwapPath, GetSwapPrice, getBestPrcie, getNoMiddlePath, getOneMiddlePathPrice, getTwoMiddlePathPrice, getThreeMiddlePathPrice} = connectWeb3
+            const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, getErc20Allowance, getErc20Decimals, getErc20balance, gasTransfer, erc20Transfer, getPairInfo, addETHLiquidity, addErc20Liquidity, getDeadline, dodoApi, swapTokensForTokens, swapTokenForETH, swapETHForToken, multiChooseSwapPrice} = connectWeb3
             const defaultAccount = await getAccount()
             const defaultChainId = await getChainId()
             const BlockNumber = await getBlockNumber()
@@ -102,27 +102,12 @@ function App() {
             nameList[HBTC] = 'HBTC'
             let middlePath = []
             const txPath = [defaultETH, HUSD]
-            middlePath = [USDT, HUSD, defaultETH]
+            middlePath = [USDT, HUSD, defaultETH,BXH,HBTC]
             let factoryList = [web3.utils.toChecksumAddress('0xb0b670fc1f7724119963018db0bfa86adb22d941'), web3.utils.toChecksumAddress('0xe0367ec2bd4ba22b1593e4fefcb91d29de6c512a'), web3.utils.toChecksumAddress('0x979efe7ca072b72d6388f415d042951ddf13036e')]
-            // getBestPrcie(txPath, middlePath, web3.utils.toChecksumAddress('0xb0b670fc1f7724119963018db0bfa86adb22d941'), function (item) {
-            //     let nameStr = []
-            //     for (let i in item.path) {
-            //         nameStr.push(nameList[item.path[i]])
-            //     }
-            //     let num0 = 0.001
-            //     console.log(num0, item.price, item.path, parseInt(item.price * num0 * (10 ** item.decimals[1])), nameStr.join(' > '))
-            // })
-            for (let factoryListItem in factoryList) {
-                console.log(factoryList[factoryListItem])
-                getBestPrcie(txPath, middlePath, factoryList[factoryListItem], function (item) {
-                    let nameStr = []
-                    for (let i in item.path) {
-                        nameStr.push(nameList[item.path[i]])
-                    }
-                    let num0 = 0.1
-                    console.log(factoryList[factoryListItem], num0, item.price, item.path, parseInt(item.price * num0 * (10 ** item.decimals[1])), nameStr.join(' > '))
-                })
-            }
+            multiChooseSwapPrice(factoryList, txPath, middlePath, function (item) {
+                console.log(item)
+            })
+
 
         }
         fectdata()

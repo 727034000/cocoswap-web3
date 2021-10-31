@@ -621,12 +621,14 @@ export async function connect() {
         }
     }
 
+    //获取数组的元素是否完全不相同
     const getArrayUnique = (arr) => {
-        console.log(arr)
+        //console.log(arr)
         const arrNew = lodash.uniq(arr)
-        console.log(arr, arrNew, arr.length, arrNew.length)
+        //console.log(arr, arrNew, arr.length, arrNew.length)
         return arr.length === arrNew.length
     }
+
     //获取兑换路径列表
     const getSwapPath = (swapList, MiddlePathList) => {
         let OneMiddlePath = []
@@ -788,8 +790,8 @@ export async function connect() {
             for (let i in listNew.NoMiddlePath) {
                 getNoMiddlePathPrice(listNew.NoMiddlePath[i], factoryAddress).then(res => {
                     PriceList.push(res)
-                    if (listNewCount === PriceList.length)
-                        callback(PriceList, listNewCount)
+                    // if (listNewCount === PriceList.length)
+                    callback(PriceList, listNewCount)
                 })
 
             }
@@ -798,8 +800,8 @@ export async function connect() {
             for (let i in listNew.OneMiddlePath) {
                 getOneMiddlePathPrice(listNew.OneMiddlePath[i], factoryAddress).then(res => {
                     PriceList.push(res)
-                    if (listNewCount === PriceList.length)
-                        callback(PriceList, listNewCount)
+                    // if (listNewCount === PriceList.length)
+                    callback(PriceList, listNewCount)
                 })
             }
         }
@@ -807,8 +809,8 @@ export async function connect() {
             for (let i in listNew.TwoMiddlePath) {
                 getTwoMiddlePathPrice(listNew.TwoMiddlePath[i], factoryAddress).then(res => {
                     PriceList.push(res)
-                    if (listNewCount === PriceList.length)
-                        callback(PriceList, listNewCount)
+                    // if (listNewCount === PriceList.length)
+                    callback(PriceList, listNewCount)
                 })
             }
         }
@@ -817,8 +819,8 @@ export async function connect() {
             for (let i in listNew.ThreeMiddlePath) {
                 getThreeMiddlePathPrice(listNew.ThreeMiddlePath[i], factoryAddress).then(res => {
                     PriceList.push(res)
-                    if (listNewCount === PriceList.length)
-                        callback(PriceList, listNewCount)
+                    // if (listNewCount === PriceList.length)
+                    callback(PriceList, listNewCount)
                 })
             }
         }
@@ -827,23 +829,51 @@ export async function connect() {
             for (let i in listNew.FourMiddlePath) {
                 getFourMiddlePathPrice(listNew.FourMiddlePath[i], factoryAddress).then(res => {
                     PriceList.push(res)
-                    if (listNewCount === PriceList.length)
-                        callback(PriceList, listNewCount)
+                    // if (listNewCount === PriceList.length)
+                    callback(PriceList, listNewCount)
                 })
             }
         }
     }
 
-    //获取最佳兑换路径
-    const getBestPrcie = async (swapList, MiddlePathList, factoryAddress, callback) => {
+    //获取单个最佳兑换路径
+    const chooseSwapPrice = async (swapList, MiddlePathList, factoryAddress, callback) => {
         GetSwapPrice(swapList, MiddlePathList, factoryAddress, function (list, listNewCount) {
-            console.log(list, listNewCount)
+            //console.log(list, listNewCount)
             const list2 = lodash.sortBy(list, function (it) {
                 return it.price
             })
-            callback(list2[list2.length - 1])
+            if (list.length === listNewCount) {
+                callback(list2[list2.length - 1])
+            }
         })
     }
+
+    //获取每个swap的最优兑换路径
+    const massChooseSwapPrice = async (factoryList, swapList, MiddlePathList, callback) => {
+        let PriceList = []
+        for (let i in factoryList) {
+            let factoryAddress = factoryList[i]
+            chooseSwapPrice(swapList, MiddlePathList, factoryAddress, function (item) {
+                PriceList.push(item)
+                callback(PriceList)
+            })
+        }
+    }
+
+    //从多个swap选择最优swap
+    const multiChooseSwapPrice = async (factoryList, swapList, MiddlePathList, callback) => {
+        massChooseSwapPrice(factoryList, swapList, MiddlePathList, function (item) {
+            const list2 = lodash.sortBy(item, function (it) {
+                return it.price
+            })
+            if (factoryList.length === list2.length) {
+                console.log(list2)
+                callback(list2[list2.length - 1])
+            }
+        })
+    }
+
 
     return {
         // wallet_address: accounts[0].slice(0, 4) + '...' + accounts[0].slice(-4),
@@ -872,14 +902,16 @@ export async function connect() {
         swapTokensForTokens: swapTokensForTokens,
         swapTokenForETH: swapTokenForETH,
         swapETHForToken: swapETHForToken,
-        getSwapPath: getSwapPath,
-        GetSwapPrice: GetSwapPrice,
-        getBestPrcie: getBestPrcie,
-        getNoMiddlePathPrice: getNoMiddlePathPrice,
-        getOneMiddlePathPrice: getOneMiddlePathPrice,
-        getTwoMiddlePathPrice: getTwoMiddlePathPrice,
-        getThreeMiddlePathPrice: getThreeMiddlePathPrice,
-        getFourMiddlePathPrice: getFourMiddlePathPrice
+        //getSwapPath: getSwapPath,
+        //GetSwapPrice: GetSwapPrice,
+        //chooseSwapPrice: chooseSwapPrice,
+        //massChooseSwapPrice: massChooseSwapPrice,
+        multiChooseSwapPrice: multiChooseSwapPrice,
+        //getNoMiddlePathPrice: getNoMiddlePathPrice,
+        //getOneMiddlePathPrice: getOneMiddlePathPrice,
+        //getTwoMiddlePathPrice: getTwoMiddlePathPrice,
+        //getThreeMiddlePathPrice: getThreeMiddlePathPrice,
+        //getFourMiddlePathPrice: getFourMiddlePathPrice
     }
 }
 
