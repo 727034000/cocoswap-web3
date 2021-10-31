@@ -91,24 +91,38 @@ function App() {
             const HTMoon = web3.utils.toChecksumAddress('0xb62E3b6a3866f5754FdeFcf82e733310e2851043')
             const HUSD = web3.utils.toChecksumAddress('0x0298c2b32eaE4da002a15f36fdf7615BEa3DA047')
             const BXH = web3.utils.toChecksumAddress('0xcBD6Cb9243d8e3381Fea611EF023e17D1B7AeDF0')
+            const HBTC = web3.utils.toChecksumAddress('0x66a79d23e58475d2738179ca52cd0b41d73f0bea')
             let nameList = {}
             nameList[HTMoon] = 'HTMoon'
             nameList[MDX] = 'MDX'
             nameList[USDT] = 'USDT'
             nameList[HUSD] = 'HUSD'
             nameList[defaultETH] = 'ETH'
-            const txPath = [HTMoon, MDX]
-            const middlePath = [USDT, HUSD, defaultETH]
-            const listNew = getSwapPath(txPath, middlePath)
-            console.log(listNew)
-            getBestPrcie(txPath, middlePath, RouterAddress, function (item) {
-                //console.log(item.path.join('-'))
-                let nameStr = []
-                for (let i in item.path) {
-                    nameStr.push(nameList[item.path[i]])
-                }
-                console.log(item.price, item.path, nameStr.join(' > '))
-            })
+            nameList[BXH] = 'BXH'
+            nameList[HBTC] = 'HBTC'
+            let middlePath = []
+            const txPath = [defaultETH, HUSD]
+            middlePath = [USDT, HUSD, defaultETH]
+            let factoryList = [web3.utils.toChecksumAddress('0xb0b670fc1f7724119963018db0bfa86adb22d941'), web3.utils.toChecksumAddress('0xe0367ec2bd4ba22b1593e4fefcb91d29de6c512a'), web3.utils.toChecksumAddress('0x979efe7ca072b72d6388f415d042951ddf13036e')]
+            // getBestPrcie(txPath, middlePath, web3.utils.toChecksumAddress('0xb0b670fc1f7724119963018db0bfa86adb22d941'), function (item) {
+            //     let nameStr = []
+            //     for (let i in item.path) {
+            //         nameStr.push(nameList[item.path[i]])
+            //     }
+            //     let num0 = 0.001
+            //     console.log(num0, item.price, item.path, parseInt(item.price * num0 * (10 ** item.decimals[1])), nameStr.join(' > '))
+            // })
+            for (let factoryListItem in factoryList) {
+                console.log(factoryList[factoryListItem])
+                getBestPrcie(txPath, middlePath, factoryList[factoryListItem], function (item) {
+                    let nameStr = []
+                    for (let i in item.path) {
+                        nameStr.push(nameList[item.path[i]])
+                    }
+                    let num0 = 0.1
+                    console.log(factoryList[factoryListItem], num0, item.price, item.path, parseInt(item.price * num0 * (10 ** item.decimals[1])), nameStr.join(' > '))
+                })
+            }
 
         }
         fectdata()

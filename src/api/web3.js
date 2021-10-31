@@ -14,6 +14,7 @@ export const REACT_APP_ERC20TOKEN_ABI = JSON.parse(process.env["REACT_APP_ERC20T
 export const REACT_APP_PAIR_ABI = JSON.parse(process.env["REACT_APP_PAIR_ABI"])
 export const REACT_APP_ROUTER_ABI = JSON.parse(process.env["REACT_APP_ROUTER_ABI"])
 export const REACT_APP_ETH_ADDRESS = JSON.parse(process.env["REACT_APP_ETH_ADDRESS"])
+export const REACT_APP_FACTORY_ABI = JSON.parse(process.env["REACT_APP_FACTORY_ABI"])
 
 
 Object.defineProperty(Array.prototype, 'max', {
@@ -466,34 +467,40 @@ export async function connect() {
         return num
     }
 
-    const getPairInfo = async (tokenA, tokenB, routerAddress) => {
-        const contract0 = new web3.eth.Contract(REACT_APP_ROUTER_ABI, routerAddress)
-        const PairAddress = await contract0.methods.pairFor(tokenA, tokenB).call()
-        const contract = new web3.eth.Contract(REACT_APP_PAIR_ABI, PairAddress)
-        const token0 = await contract.methods.token0().call()
-        const token1 = await contract.methods.token1().call()
-        const decimals0 = await getErc20Decimals(token0, REACT_APP_ERC20TOKEN_ABI)
-        const decimals1 = await getErc20Decimals(token1, REACT_APP_ERC20TOKEN_ABI)
-        const {_reserve0, _reserve1} = await contract.methods.getReserves().call()
-        let PairPriceList = {}
-        //返回各代币相对价格和ppooled数量
-        PairPriceList[token0] = {
-            decimals: decimals0,
-            reserve: _reserve0
+    const getPairInfo = async (tokenA, tokenB, factoryAddress) => {
+        try {
+            const contract0 = new web3.eth.Contract(REACT_APP_FACTORY_ABI, factoryAddress)
+            const PairAddress = await contract0.methods.getPair(tokenA, tokenB).call()
+            // const contract0 = new web3.eth.Contract(REACT_APP_ROUTER_ABI, factoryAddress)
+            // const PairAddress = await contract0.methods.pairFor(tokenA, tokenB).call()
+            const contract = new web3.eth.Contract(REACT_APP_PAIR_ABI, PairAddress)
+            const token0 = await contract.methods.token0().call()
+            const token1 = await contract.methods.token1().call()
+            const decimals0 = await getErc20Decimals(token0, REACT_APP_ERC20TOKEN_ABI)
+            const decimals1 = await getErc20Decimals(token1, REACT_APP_ERC20TOKEN_ABI)
+            const {_reserve0, _reserve1} = await contract.methods.getReserves().call()
+            let PairPriceList = {}
+            //返回各代币相对价格和ppooled数量
+            PairPriceList[token0] = {
+                decimals: decimals0,
+                reserve: _reserve0
+            }
+            PairPriceList[token1] = {
+                decimals: decimals1,
+                reserve: _reserve1
+            }
+            PairPriceList.PairAddress = PairAddress
+            return PairPriceList
+        } catch (e) {
+            return {}
         }
-        PairPriceList[token1] = {
-            decimals: decimals1,
-            reserve: _reserve1
-        }
-        PairPriceList.PairAddress = PairAddress
-        return PairPriceList
     }
 
     //普通代币交易对直接兑换
-    const swapTokensForTokens = async (fromTokenAddress, toTokenAddress, fromAmount, slippage, routerAddress) => {
+    const swapTokensForTokens = async (fromTokenAddress, toTokenAddress, fromAmount, slippage, routerAddress, factoryAddress) => {
         try {
             const defaultAccount = await getAccount()
-            const PriceList = await getPairInfo(fromTokenAddress, toTokenAddress, routerAddress)
+            const PriceList = await getPairInfo(fromTokenAddress, toTokenAddress, factoryAddress)
             //console.log(PriceList)
             const fromAmount2 = maxamount(fromAmount, PriceList[web3.utils.toChecksumAddress(fromTokenAddress)]['decimals'], false)
             console.log('fromAmount2', fromAmount2.toString() / 10 ** 18)
@@ -513,12 +520,12 @@ export async function connect() {
     }
 
     //普通代币兑换ETH,,无中间路径
-    const swapTokenForETH = async (fromTokenAddress, fromAmount, slippage, routerAddress) => {
+    const swapTokenForETH = async (fromTokenAddress, fromAmount, slippage, routerAddress, factoryAddress) => {
         try {
             const defaultAccount = await getAccount()
             const ChainId = await getChainId()
             const toTokenAddress = REACT_APP_ETH_ADDRESS[ChainId]
-            const PriceList = await getPairInfo(fromTokenAddress, toTokenAddress, routerAddress)
+            const PriceList = await getPairInfo(fromTokenAddress, toTokenAddress, factoryAddress)
             const fromAmount2 = maxamount(fromAmount, PriceList[web3.utils.toChecksumAddress(fromTokenAddress)]['decimals'], false)
             console.log(fromAmount2.toString())
             const toAmount = fromAmount2.toString() * (PriceList[web3.utils.toChecksumAddress(toTokenAddress)]['reserve']) / (PriceList[web3.utils.toChecksumAddress(fromTokenAddress)]['reserve'])
@@ -536,12 +543,12 @@ export async function connect() {
     }
 
     //普通代币兑换ETH,无中间路径
-    const swapETHForToken = async (toTokenAddress, fromAmount, slippage, routerAddress) => {
+    const swapETHForToken = async (toTokenAddress, fromAmount, slippage, routerAddress, factoryAddress) => {
         try {
             const defaultAccount = await getAccount()
             const ChainId = await getChainId()
             const fromTokenAddress = REACT_APP_ETH_ADDRESS[ChainId]
-            const PriceList = await getPairInfo(fromTokenAddress, toTokenAddress, routerAddress)
+            const PriceList = await getPairInfo(fromTokenAddress, toTokenAddress, factoryAddress)
             const fromAmount2 = maxamount(fromAmount, PriceList[web3.utils.toChecksumAddress(fromTokenAddress)]['decimals'], false)
             const toAmount = fromAmount2.toString() * (PriceList[web3.utils.toChecksumAddress(toTokenAddress)]['reserve']) / (PriceList[web3.utils.toChecksumAddress(fromTokenAddress)]['reserve'])
             // const toAmount2 = new BigNumber(toAmount - (slippage / 100) * toAmount)
@@ -627,11 +634,15 @@ export async function connect() {
         let ThreeMiddlePath = []
         let FourMiddlePath = []
         for (let i in MiddlePathList) {
-            OneMiddlePath.push([swapList[0], MiddlePathList[i], swapList[1]])
+            if (getArrayUnique([swapList[0], MiddlePathList[i], swapList[1]])) {
+                OneMiddlePath.push([swapList[0], MiddlePathList[i], swapList[1]])
+            }
+
+
         }
         for (let i in MiddlePathList) {
             for (let j in MiddlePathList) {
-                if (getArrayUnique([MiddlePathList[i], MiddlePathList[j]])) {
+                if (getArrayUnique([swapList[0], MiddlePathList[i], MiddlePathList[j], swapList[1]])) {
                     TwoMiddlePath.push([swapList[0], MiddlePathList[i], MiddlePathList[j], swapList[1]])
                 }
             }
@@ -640,7 +651,7 @@ export async function connect() {
         for (let i in MiddlePathList) {
             for (let j in MiddlePathList) {
                 for (let k in MiddlePathList) {
-                    if (getArrayUnique([MiddlePathList[i], MiddlePathList[j], MiddlePathList[k]])) {
+                    if (getArrayUnique([swapList[0], MiddlePathList[i], MiddlePathList[j], MiddlePathList[k], swapList[1]])) {
                         ThreeMiddlePath.push([swapList[0], MiddlePathList[i], MiddlePathList[j], MiddlePathList[k], swapList[1]])
                     }
                 }
@@ -651,7 +662,7 @@ export async function connect() {
             for (let j in MiddlePathList) {
                 for (let k in MiddlePathList) {
                     for (let l in MiddlePathList) {
-                        if (getArrayUnique([MiddlePathList[i], MiddlePathList[j], MiddlePathList[k], MiddlePathList[l]])) {
+                        if (getArrayUnique([swapList[0], MiddlePathList[i], MiddlePathList[j], MiddlePathList[k], MiddlePathList[l], swapList[1]])) {
                             FourMiddlePath.push([swapList[0], MiddlePathList[i], MiddlePathList[j], MiddlePathList[k], MiddlePathList[l], swapList[1]])
                         }
                     }
@@ -674,13 +685,13 @@ export async function connect() {
      * 无中间兑换路径
      const list = [fromToken,toToken]
      **/
-    const getNoMiddlePathPrice = async (list, RouterAddress) => {
+    const getNoMiddlePathPrice = async (list, factoryAddress) => {
         try {
-            const m1 = await getPairInfo(list[0], list[1], RouterAddress)
-            let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
-            return {price: n1, path: list}
+            const m1 = await getPairInfo(list[0], list[1], factoryAddress)
+            let n1 = (m1[list[0]]['reserve'] / (10 ** m1[list[0]]['decimals'])) / (m1[list[1]]['reserve'] / (10 ** m1[list[1]]['decimals']))
+            return {price: 1 / n1, path: list, decimals: [m1[list[0]]['decimals'], m1[list[1]]['decimals']]}
         } catch (e) {
-            return {price: 0, path: null};
+            return {price: 0, path: null, decimals: null};
         }
     }
 
@@ -688,16 +699,15 @@ export async function connect() {
      * 一个中间兑换路径
      const list = [fromToken,middleToken,toToken]
      **/
-    const getOneMiddlePathPrice = async (list, RouterAddress) => {
+    const getOneMiddlePathPrice = async (list, factoryAddress) => {
         try {
-            const m1 = await getPairInfo(list[0], list[1], RouterAddress)
-            const m2 = await getPairInfo(list[1], list[2], RouterAddress)
-            //const m = await getPairInfo(list.fromToken, list.toToken, RouterAddress)
-            let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
-            let n2 = (m2[list[1]]['reserve']) / (m2[list[2]]['reserve'])
-            return {price: n1 * n2, path: list}
+            const m1 = await getPairInfo(list[0], list[1], factoryAddress)
+            const m2 = await getPairInfo(list[1], list[2], factoryAddress)
+            let n1 = (m1[list[0]]['reserve'] / (10 ** m1[list[0]]['decimals'])) / (m1[list[1]]['reserve'] / (10 ** m1[list[1]]['decimals']))
+            let n2 = (m2[list[1]]['reserve'] / (10 ** m2[list[1]]['decimals'])) / (m2[list[2]]['reserve'] / (10 ** m2[list[2]]['decimals']))
+            return {price: 1 / (n1 * n2), path: list, decimals: [m1[list[0]]['decimals'], m2[list[2]]['decimals']]}
         } catch (e) {
-            return {price: 0, path: null}
+            return {price: 0, path: null, decimals: null}
         }
     }
 
@@ -705,17 +715,17 @@ export async function connect() {
      * 两个中间兑换路径
      const list = [fromToken,middleToken1,middleToken2,toToken]
      **/
-    const getTwoMiddlePathPrice = async (list, RouterAddress) => {
+    const getTwoMiddlePathPrice = async (list, factoryAddress) => {
         try {
-            const m1 = await getPairInfo(list[0], list[1], RouterAddress)
-            const m2 = await getPairInfo(list[1], list[2], RouterAddress)
-            const m3 = await getPairInfo(list[2], list[3], RouterAddress)
-            let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
-            let n2 = (m2[list[1]]['reserve']) / (m2[list[2]]['reserve'])
-            let n3 = (m3[list[2]]['reserve']) / (m3[list[3]]['reserve'])
-            return {price: n1 * n2 * n3, path: list}
+            const m1 = await getPairInfo(list[0], list[1], factoryAddress)
+            const m2 = await getPairInfo(list[1], list[2], factoryAddress)
+            const m3 = await getPairInfo(list[2], list[3], factoryAddress)
+            let n1 = (m1[list[0]]['reserve'] / (10 ** m1[list[0]]['decimals'])) / (m1[list[1]]['reserve'] / (10 ** m1[list[1]]['decimals']))
+            let n2 = (m2[list[1]]['reserve'] / (10 ** m2[list[1]]['decimals'])) / (m2[list[2]]['reserve'] / (10 ** m2[list[2]]['decimals']))
+            let n3 = (m3[list[2]]['reserve'] / (10 ** m3[list[2]]['decimals'])) / (m3[list[3]]['reserve'] / (10 ** m3[list[3]]['decimals']))
+            return {price: 1 / (n1 * n2 * n3), path: list, decimals: [m1[list[0]]['decimals'], m3[list[3]]['decimals']]}
         } catch (e) {
-            return {price: 0, path: null};
+            return {price: 0, path: null, decimals: null};
         }
     }
 
@@ -723,19 +733,23 @@ export async function connect() {
      * 三个中间兑换路径
      const list = [fromToken,middleToken1,middleToken2,middleToken3,toToken]
      **/
-    const getThreeMiddlePathPrice = async (list, RouterAddress) => {
+    const getThreeMiddlePathPrice = async (list, factoryAddress) => {
         try {
-            const m1 = await getPairInfo(list[0], list[1], RouterAddress)
-            const m2 = await getPairInfo(list[1], list[2], RouterAddress)
-            const m3 = await getPairInfo(list[2], list[3], RouterAddress)
-            const m4 = await getPairInfo(list[3], list[4], RouterAddress)
-            let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
-            let n2 = (m2[list[1]]['reserve']) / (m2[list[2]]['reserve'])
-            let n3 = (m3[list[2]]['reserve']) / (m3[list[3]]['reserve'])
-            let n4 = (m4[list[3]]['reserve']) / (m4[list[4]]['reserve'])
-            return {price: n1 * n2 * n3 * n4, path: list}
+            const m1 = await getPairInfo(list[0], list[1], factoryAddress)
+            const m2 = await getPairInfo(list[1], list[2], factoryAddress)
+            const m3 = await getPairInfo(list[2], list[3], factoryAddress)
+            const m4 = await getPairInfo(list[3], list[4], factoryAddress)
+            let n1 = (m1[list[0]]['reserve'] / (10 ** m1[list[0]]['decimals'])) / (m1[list[1]]['reserve'] / (10 ** m1[list[1]]['decimals']))
+            let n2 = (m2[list[1]]['reserve'] / (10 ** m2[list[1]]['decimals'])) / (m2[list[2]]['reserve'] / (10 ** m2[list[2]]['decimals']))
+            let n3 = (m3[list[2]]['reserve'] / (10 ** m3[list[2]]['decimals'])) / (m3[list[3]]['reserve'] / (10 ** m3[list[3]]['decimals']))
+            let n4 = (m4[list[3]]['reserve'] / (10 ** m4[list[3]]['decimals'])) / (m4[list[4]]['reserve'] / (10 ** m4[list[4]]['decimals']))
+            return {
+                price: 1 / (n1 * n2 * n3 * n4),
+                path: list,
+                decimals: [m1[list[0]]['decimals'], m4[list[4]]['decimals']]
+            }
         } catch (e) {
-            return {price: 0, path: null};
+            return {price: 0, path: null, decimals: null};
         }
     }
 
@@ -743,77 +757,87 @@ export async function connect() {
      * 四个中间兑换路径
      const list = [fromToken,middleToken1,middleToken2,middleToken3,middleToken4,toToken]
      **/
-    const getFourMiddlePathPrice = async (list, RouterAddress) => {
+    const getFourMiddlePathPrice = async (list, factoryAddress) => {
         try {
-            const m1 = await getPairInfo(list[0], list[1], RouterAddress)
-            const m2 = await getPairInfo(list[1], list[2], RouterAddress)
-            const m3 = await getPairInfo(list[2], list[3], RouterAddress)
-            const m4 = await getPairInfo(list[3], list[4], RouterAddress)
-            const m5 = await getPairInfo(list[4], list[5], RouterAddress)
-            let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
-            let n2 = (m2[list[1]]['reserve']) / (m2[list[2]]['reserve'])
-            let n3 = (m3[list[2]]['reserve']) / (m3[list[3]]['reserve'])
-            let n4 = (m4[list[3]]['reserve']) / (m4[list[4]]['reserve'])
-            let n5 = (m5[list[4]]['reserve']) / (m5[list[5]]['reserve'])
-            return {price: n1 * n2 * n3 * n4 * n5 * (swapRate ** 4), path: list}
+            const m1 = await getPairInfo(list[0], list[1], factoryAddress)
+            const m2 = await getPairInfo(list[1], list[2], factoryAddress)
+            const m3 = await getPairInfo(list[2], list[3], factoryAddress)
+            const m4 = await getPairInfo(list[3], list[4], factoryAddress)
+            const m5 = await getPairInfo(list[4], list[5], factoryAddress)
+            let n1 = (m1[list[0]]['reserve'] / (10 ** m1[list[0]]['decimals'])) / (m1[list[1]]['reserve'] / (10 ** m1[list[1]]['decimals']))
+            let n2 = (m2[list[1]]['reserve'] / (10 ** m2[list[1]]['decimals'])) / (m2[list[2]]['reserve'] / (10 ** m2[list[2]]['decimals']))
+            let n3 = (m3[list[2]]['reserve'] / (10 ** m3[list[2]]['decimals'])) / (m3[list[3]]['reserve'] / (10 ** m3[list[3]]['decimals']))
+            let n4 = (m4[list[3]]['reserve'] / (10 ** m4[list[3]]['decimals'])) / (m4[list[4]]['reserve'] / (10 ** m4[list[4]]['decimals']))
+            let n5 = (m5[list[4]]['reserve'] / (10 ** m5[list[4]]['decimals'])) / (m5[list[5]]['reserve'] / (10 ** m5[list[5]]['decimals']))
+            return {
+                price: 1 / (n1 * n2 * n3 * n4 * n5),
+                path: list,
+                decimals: [m1[list[0]]['decimals'], m5[list[5]]['decimals']]
+            }
         } catch (e) {
-            return {price: 0, path: null};
+            return {price: 0, path: null, decimals: null};
         }
     }
 
-    const GetSwapPrice = async (swapList, MiddlePathList, RouterAddress, callback) => {
+    const GetSwapPrice = async (swapList, MiddlePathList, factoryAddress, callback) => {
         const listNew = getSwapPath(swapList, MiddlePathList)
         const listNewCount = listNew.NoMiddlePath.length + listNew.OneMiddlePath.length + listNew.TwoMiddlePath.length + listNew.ThreeMiddlePath.length + listNew.FourMiddlePath.length
         console.log('listNewCount', listNewCount)
         let PriceList = []
         if (listNew.NoMiddlePath.length > 0) {
             for (let i in listNew.NoMiddlePath) {
-                getNoMiddlePathPrice(listNew.NoMiddlePath[i], RouterAddress).then(res => {
+                getNoMiddlePathPrice(listNew.NoMiddlePath[i], factoryAddress).then(res => {
                     PriceList.push(res)
-                    callback(PriceList, listNewCount)
+                    if (listNewCount === PriceList.length)
+                        callback(PriceList, listNewCount)
                 })
 
             }
         }
         if (listNew.OneMiddlePath.length > 0) {
             for (let i in listNew.OneMiddlePath) {
-                getOneMiddlePathPrice(listNew.OneMiddlePath[i], RouterAddress).then(res => {
+                getOneMiddlePathPrice(listNew.OneMiddlePath[i], factoryAddress).then(res => {
                     PriceList.push(res)
-                    callback(PriceList, listNewCount)
+                    if (listNewCount === PriceList.length)
+                        callback(PriceList, listNewCount)
                 })
             }
         }
         if (listNew.TwoMiddlePath.length > 0) {
             for (let i in listNew.TwoMiddlePath) {
-                getTwoMiddlePathPrice(listNew.TwoMiddlePath[i], RouterAddress).then(res => {
+                getTwoMiddlePathPrice(listNew.TwoMiddlePath[i], factoryAddress).then(res => {
                     PriceList.push(res)
-                    callback(PriceList, listNewCount)
+                    if (listNewCount === PriceList.length)
+                        callback(PriceList, listNewCount)
                 })
             }
         }
 
         if (listNew.ThreeMiddlePath.length > 0) {
             for (let i in listNew.ThreeMiddlePath) {
-                getThreeMiddlePathPrice(listNew.ThreeMiddlePath[i], RouterAddress).then(res => {
+                getThreeMiddlePathPrice(listNew.ThreeMiddlePath[i], factoryAddress).then(res => {
                     PriceList.push(res)
-                    callback(PriceList, listNewCount)
+                    if (listNewCount === PriceList.length)
+                        callback(PriceList, listNewCount)
                 })
             }
         }
 
         if (listNew.FourMiddlePath.length > 0) {
             for (let i in listNew.FourMiddlePath) {
-                getFourMiddlePathPrice(listNew.FourMiddlePath[i], RouterAddress).then(res => {
+                getFourMiddlePathPrice(listNew.FourMiddlePath[i], factoryAddress).then(res => {
                     PriceList.push(res)
-                    callback(PriceList, listNewCount)
+                    if (listNewCount === PriceList.length)
+                        callback(PriceList, listNewCount)
                 })
             }
         }
     }
 
     //获取最佳兑换路径
-    const getBestPrcie = async (swapList, MiddlePathList, RouterAddress, callback) => {
-        GetSwapPrice(swapList, MiddlePathList, RouterAddress, function (list, listNewCount) {
+    const getBestPrcie = async (swapList, MiddlePathList, factoryAddress, callback) => {
+        GetSwapPrice(swapList, MiddlePathList, factoryAddress, function (list, listNewCount) {
+            console.log(list, listNewCount)
             const list2 = lodash.sortBy(list, function (it) {
                 return it.price
             })
