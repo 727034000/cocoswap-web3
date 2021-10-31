@@ -11,6 +11,7 @@ import {
 import {useEffect, useState} from 'react'
 import axios from "axios"
 import qs from 'qs'
+import lodash from "lodash";
 
 function App() {
     const [userData, setUserDate] = useState([]);
@@ -109,10 +110,12 @@ function App() {
             // })
             massGetBalance(getTokenList(), function (returnList, TokenListCount) {
                 if (returnList.length === TokenListCount) {
-                    console.log(returnList)
-                    console.log(TokenListCount)
-                    for (let i in returnList) {
-                        console.log(returnList[i]['address'], returnList[i]['balance'])
+                    let returnList2
+                    returnList2 = returnList.sort(function (a, b) {
+                        return parseFloat(b.balance) - parseFloat(a.balance)
+                    })
+                    for (let i in returnList2) {
+                        console.log(returnList2[i]['symbol'], returnList2[i]['address'], returnList2[i]['balance'] / (10 ** (returnList2[i]['decimals'])))
                     }
                 }
             })

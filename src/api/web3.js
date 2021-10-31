@@ -874,15 +874,15 @@ export async function connect() {
         })
     }
 
-    const massGetBalance = async (TokenList,callback) => {
+    const massGetBalance = async (TokenList, callback) => {
         const TokenListCount = Object.keys(TokenList).length
         const defaultAccount = await getAccount()
         const returnList = []
         for (let i in TokenList) {
-            getErc20balance(i,defaultAccount).then(res=>{
+            getErc20balance(i, defaultAccount).then(res => {
                 TokenList[i]['balance'] = res
                 returnList.push(TokenList[i])
-                callback(returnList,TokenListCount)
+                callback(returnList, TokenListCount)
             })
         }
     }
