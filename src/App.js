@@ -121,9 +121,8 @@ function App() {
             //     }
             // })
             //异步获取各种网络参数
-            getInfoList(function (returnArray, methodCount) {
-                if (Object.keys(returnArray).length === methodCount)
-                    console.log(returnArray)
+            getInfoList(function (returnArray) {
+                console.log(returnArray)
             })
 
 

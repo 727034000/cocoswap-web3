@@ -887,7 +887,7 @@ export async function connect() {
         }
     }
 
-    const getInfoList = async (callback) => {
+    const getInfoListAsync = async (callback) => {
         const getBlockNumber = await web3.eth.getBlockNumber()
         const methodCount = 4
         let returnArray = {}
@@ -908,6 +908,13 @@ export async function connect() {
             callback(returnArray, methodCount)
         })
 
+    }
+
+    const getInfoList = (callback) => {
+        getInfoListAsync(function (returnArray, methodCount) {
+            if (Object.keys(returnArray).length === methodCount)
+                callback(returnArray)
+        })
     }
 
 
