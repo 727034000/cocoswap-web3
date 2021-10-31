@@ -18,7 +18,7 @@ function App() {
     useEffect(() => {
         const fectdata = async () => {
             const connectWeb3 = await connect()
-            const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, getErc20Allowance, getErc20Decimals, getErc20balance, gasTransfer, erc20Transfer, getPairInfo, addETHLiquidity, addErc20Liquidity, getDeadline, dodoApi, swapTokensForTokens, swapTokenForETH, swapETHForToken} = connectWeb3
+            const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, getErc20Allowance, getErc20Decimals, getErc20balance, gasTransfer, erc20Transfer, getPairInfo, addETHLiquidity, addErc20Liquidity, getDeadline, dodoApi, swapTokensForTokens, swapTokenForETH, swapETHForToken, getNoMiddlePath, getOneMiddlePathPrice, getTwoMiddlePathPrice} = connectWeb3
             const defaultAccount = await getAccount()
             const defaultChainId = await getChainId()
             const BlockNumber = await getBlockNumber()
@@ -87,15 +87,19 @@ function App() {
             // console.log('调用dodoswap接口测试结束')
             const MDX = web3.utils.toChecksumAddress('0x25D2e80cB6B86881Fd7e07dd263Fb79f4AbE033c')
             //寻找最佳兑换路径
-            const list = [MDX, defaultETH, USDT]
-            const m1 = await getPairInfo(MDX, defaultETH, RouterAddress)
-            const m2 = await getPairInfo(defaultETH, USDT, RouterAddress)
-            const m3 = await getPairInfo(MDX, USDT, RouterAddress)
-            let n1 = (m1[MDX]['reserve']) / (m1[defaultETH]['reserve'])
-            let n2 = (m2[defaultETH]['reserve']) / (m2[USDT]['reserve'])
-            let n3 = (m3[MDX]['reserve']) / (m3[USDT]['reserve'])
-            console.log(n1 * n2)
-            console.log(n3)
+            let list = [MDX, USDT]
+            getNoMiddlePath(list, RouterAddress).then(res => {
+                console.log('getNoMiddlePath',res)
+            }).catch(e => {
+                console.log(e)
+            })
+
+            list = [MDX, defaultETH, USDT]
+            getOneMiddlePathPrice(list, RouterAddress).then(res => {
+                console.log('getOneMiddlePathPrice',res)
+            }).catch(e => {
+                console.log(e)
+            })
 
 
         }

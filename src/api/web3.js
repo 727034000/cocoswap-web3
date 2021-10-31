@@ -593,6 +593,55 @@ export async function connect() {
         }
     }
 
+    /**
+     * 无中间兑换路径
+     const list = [fromToken,toToken]
+     **/
+    const getNoMiddlePath = async (list, RouterAddress) => {
+        try {
+            const m1 = await getPairInfo(list[0], list[1], RouterAddress)
+            let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
+            return n1
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    /**
+     * 一个中间兑换路径
+     const list = [fromToken,middleToken,toToken]
+     **/
+    const getOneMiddlePathPrice = async (list, RouterAddress) => {
+        try {
+            const m1 = await getPairInfo(list[0], list[1], RouterAddress)
+            const m2 = await getPairInfo(list[1], list[2], RouterAddress)
+            //const m = await getPairInfo(list.fromToken, list.toToken, RouterAddress)
+            let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
+            let n2 = (m2[list[1]]['reserve']) / (m2[list[2]]['reserve'])
+            return n1 * n2
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    /**
+     * 两个中间兑换路径
+     const list = [fromToken,middleToken1,middleToken2,toToken]
+     **/
+    const getTwoMiddlePathPrice = async (list, RouterAddress) => {
+        try {
+            const m1 = await getPairInfo(list[0], list[1], RouterAddress)
+            const m2 = await getPairInfo(list[1], list[2], RouterAddress)
+            const m3 = await getPairInfo(list[2], list[3], RouterAddress)
+            let n1 = (m1[list[0]]['reserve']) / (m1[list[1]]['reserve'])
+            let n2 = (m2[list[1]]['reserve']) / (m2[list[2]]['reserve'])
+            let n3 = (m2[list[2]]['reserve']) / (m2[list[3]]['reserve'])
+            return n1 * n2 * n3
+        } catch (e) {
+            return 0;
+        }
+    }
+
     return {
         // wallet_address: accounts[0].slice(0, 4) + '...' + accounts[0].slice(-4),
         web3Modal: web3Modal,
@@ -619,7 +668,10 @@ export async function connect() {
         dodoApi: dodoApi,
         swapTokensForTokens: swapTokensForTokens,
         swapTokenForETH: swapTokenForETH,
-        swapETHForToken: swapETHForToken
+        swapETHForToken: swapETHForToken,
+        getNoMiddlePath: getNoMiddlePath,
+        getOneMiddlePathPrice: getOneMiddlePathPrice,
+        getTwoMiddlePathPrice: getTwoMiddlePathPrice
     }
 }
 
