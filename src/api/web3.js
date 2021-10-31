@@ -887,11 +887,35 @@ export async function connect() {
         }
     }
 
+    const getInfoList = async (callback) => {
+        const getBlockNumber = await web3.eth.getBlockNumber()
+        const methodCount = 4
+        let returnArray = {}
+        web3.eth.getAccounts().then(res => {
+            returnArray.defaultAccount = res[0]
+            callback(returnArray, methodCount)
+        })
+        web3.eth.getBlock(getBlockNumber).then(res => {
+            returnArray.timestamp = res.timestamp
+            callback(returnArray, methodCount)
+        })
+        web3.eth.getChainId().then(res => {
+            returnArray.ChainId = res
+            callback(returnArray, methodCount)
+        })
+        web3.eth.getNodeInfo().then(res => {
+            returnArray.NodeInfo = res
+            callback(returnArray, methodCount)
+        })
+
+    }
+
 
     return {
         // wallet_address: accounts[0].slice(0, 4) + '...' + accounts[0].slice(-4),
         web3Modal: web3Modal,
         web3: web3,
+        getInfoList: getInfoList,
         getChainId: getChainId,
         getBlockNumber: getBlockNumber,
         getNodeInfo: getNodeInfo,

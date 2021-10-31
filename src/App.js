@@ -20,7 +20,7 @@ function App() {
     useEffect(() => {
         const fectdata = async () => {
             const connectWeb3 = await connect()
-            const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, getErc20Allowance, getErc20Decimals, getErc20balance, gasTransfer, erc20Transfer, getPairInfo, addETHLiquidity, addErc20Liquidity, getDeadline, dodoApi, swapTokensForTokens, swapTokenForETH, swapETHForToken, multiChooseSwapPrice, massGetBalance} = connectWeb3
+            const {web3, getAccount, getBlockNumber, getChainId, getBalance, getNodeInfo, getPairPriceList, findLiquidity, removeLiquidity, removeEthLiquidity, erc20Approve, getErc20Allowance, getErc20Decimals, getErc20balance, gasTransfer, erc20Transfer, getPairInfo, addETHLiquidity, addErc20Liquidity, getDeadline, dodoApi, swapTokensForTokens, swapTokenForETH, swapETHForToken, multiChooseSwapPrice, massGetBalance, getInfoList} = connectWeb3
             const defaultAccount = await getAccount()
             const defaultChainId = await getChainId()
             const BlockNumber = await getBlockNumber()
@@ -108,16 +108,22 @@ function App() {
             // multiChooseSwapPrice(factoryList, txPath, middlePath, function (item) {
             //     console.log(item)
             // })
-            massGetBalance(getTokenList(), function (returnList, TokenListCount) {
-                if (returnList.length === TokenListCount) {
-                    let returnList2
-                    returnList2 = returnList.sort(function (a, b) {
-                        return parseFloat(b.balance) - parseFloat(a.balance)
-                    })
-                    for (let i in returnList2) {
-                        console.log(returnList2[i]['symbol'], returnList2[i]['address'], returnList2[i]['balance'] / (10 ** (returnList2[i]['decimals'])))
-                    }
-                }
+            //批量获取代币余额
+            // massGetBalance(getTokenList(), function (returnList, TokenListCount) {
+            //     if (returnList.length === TokenListCount) {
+            //         let returnList2
+            //         returnList2 = returnList.sort(function (a, b) {
+            //             return parseFloat(b.balance) - parseFloat(a.balance)
+            //         })
+            //         for (let i in returnList2) {
+            //             console.log(returnList2[i]['symbol'], returnList2[i]['address'], returnList2[i]['balance'] / (10 ** (returnList2[i]['decimals'])))
+            //         }
+            //     }
+            // })
+            //异步获取各种网络参数
+            getInfoList(function (returnArray, methodCount) {
+                if (Object.keys(returnArray).length === methodCount)
+                    console.log(returnArray)
             })
 
 
